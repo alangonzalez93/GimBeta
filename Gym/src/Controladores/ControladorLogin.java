@@ -8,6 +8,7 @@ import Interfaces.IngresoGui;
 import Interfaces.LoginGUI;
 import Interfaces.PrincipalGui;
 import Modelos.Arancel;
+import Modelos.Demo;
 import Modelos.Socio;
 import Modelos.Socioarancel;
 import Modelos.User;
@@ -16,6 +17,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Iterator;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -40,10 +42,48 @@ public class ControladorLogin extends Thread implements ActionListener {
         this.app = app;
         this.ingreso = ingresoGui;
     }
+    //METODO AGREGADO PARA CONTROLAR VERSION DE PRUEBA
+public void crearUsuario() {
+        if (User.findAll().isEmpty()) {
+            User.createIt();
+            Demo demo = new Demo();
+            demo = Demo.createIt("fecha", Calendar.getInstance().getTime(), "activado", false);
 
+        } else {
+            Base.openTransaction();
+            Demo demo = (Demo) Demo.findAll().get(0);
+                    if (demo.getInteger("dias") == 0) {
+                        int opt = JOptionPane.showConfirmDialog(null, "Demo finalizada, se cerrará el programa", "Aviso", JOptionPane.CLOSED_OPTION);
+                        System.exit(0);
+                    } else {
+                      java.sql.Date fechaHoy= new java.sql.Date( Calendar.getInstance().getTime().getTime());
+                      java.sql.Date fechaUlt= demo.getDate("fecha");
+                        if (fechaUlt.before(fechaHoy) && !fechaUlt.toString().equals(fechaHoy.toString())) {
+                            demo.set("dias", demo.getInteger("dias") - 1);
+                            demo.set("fecha", Calendar.getInstance().getTime());
+                        } else {
+                            if (fechaUlt.after(fechaHoy)) {
+                                int opt = JOptionPane.showConfirmDialog(null, "Demo finalizada, se cerrará el programa", "Aviso", JOptionPane.CLOSED_OPTION);
+                                 demo.set("dias",0);
+                                 demo.saveIt();
+                                 Base.commitTransaction();
+                                System.exit(0);
+                            }
+                }
+            }
+            demo.saveIt();
+            Base.commitTransaction();
+
+        }
+
+    }
     public void run() {
-
+        //AGREGADO PARA VERSION DE PRUEBA//
+        abrirBase();
+        crearUsuario();
+        //////////////////////////////
         log = new LoginGUI();
+        
         log.setActionListener(this);
         log.setLocationRelativeTo(null);
         log.setVisible(true);
